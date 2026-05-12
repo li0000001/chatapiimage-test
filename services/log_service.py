@@ -68,8 +68,21 @@ class LogService:
         }
         with self.path.open("a", encoding="utf-8") as file:
             file.write(self._serialize_item(item) + "\n")
+        try:
+            from services.backup_service import backup_service
+            backup_service.upload_runtime_file(self.path, "logs.jsonl", content_type="application/x-ndjson")
+        except Exception:
+            pass
+
+    def _sync_from_bucket(self) -> None:
+        try:
+            from services.backup_service import backup_service
+            backup_service.sync_runtime_file_from_bucket(self.path, "logs.jsonl")
+        except Exception:
+            pass
 
     def list(self, type: str = "", start_date: str = "", end_date: str = "", limit: int = 200) -> list[dict[str, Any]]:
+        self._sync_from_bucket()
         if not self.path.exists():
             return []
         items: list[dict[str, Any]] = []
@@ -86,6 +99,7 @@ class LogService:
         return items
 
     def delete(self, ids: list[str]) -> dict[str, int]:
+        self._sync_from_bucket()
         target_ids = {str(item or "").strip() for item in ids if str(item or "").strip()}
         if not self.path.exists() or not target_ids:
             return {"removed": 0}
@@ -105,6 +119,11 @@ class LogService:
         if content:
             content += "\n"
         self.path.write_text(content, encoding="utf-8")
+        try:
+            from services.backup_service import backup_service
+            backup_service.upload_runtime_file(self.path, "logs.jsonl", content_type="application/x-ndjson")
+        except Exception:
+            pass
         return {"removed": removed}
 
 

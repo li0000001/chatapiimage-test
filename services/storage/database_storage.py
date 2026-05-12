@@ -4,6 +4,7 @@ import json
 from typing import Any
 
 from sqlalchemy import Column, String, Text, create_engine, Integer, text
+from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 
@@ -93,21 +94,28 @@ class DatabaseStorageBackend(StorageBackend):
         source_key: str,
         target_key: str | None = None,
     ) -> None:
+        """保存数据到数据库，使用 UPSERT 避免多实例竞态问题"""
         session = self.Session()
         try:
-            session.query(model).delete()
+            key_column = target_key or source_key
+            
             for item in items:
                 if not isinstance(item, dict):
                     continue
                 key_value = str(item.get(source_key) or "").strip()
                 if not key_value:
                     continue
-                session.add(
-                    model(
-                        **{target_key or source_key: key_value},
-                        data=json.dumps(item, ensure_ascii=False),
-                    )
+                
+                # 使用 PostgreSQL UPSERT (INSERT ON CONFLICT UPDATE)
+                stmt = pg_insert(model).values(
+                    **{key_column: key_value},
+                    data=json.dumps(item, ensure_ascii=False),
+                ).on_conflict_do_update(
+                    index_elements=[key_column],
+                    set_={"data": json.dumps(item, ensure_ascii=False)}
                 )
+                session.execute(stmt)
+            
             session.commit()
         except Exception as e:
             session.rollback()

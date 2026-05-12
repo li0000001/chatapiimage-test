@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+from datetime import datetime, timezone
 from typing import Any
 
 from sqlalchemy import Column, String, Text, create_engine, Integer, text
@@ -71,6 +72,89 @@ class DatabaseStorageBackend(StorageBackend):
     def save_auth_keys(self, auth_keys: list[dict[str, Any]]) -> None:
         """保存鉴权密钥数据到数据库"""
         self._save_rows(AuthKeyModel, auth_keys, "id", "key_id")
+
+    @staticmethod
+    def _public_auth_key(item: dict[str, Any]) -> dict[str, Any]:
+        image_quota_limit = item.get("image_quota_limit")
+        try:
+            image_quota_limit = None if image_quota_limit is None or image_quota_limit == "" else max(0, int(image_quota_limit))
+        except (TypeError, ValueError):
+            image_quota_limit = None
+        try:
+            image_quota_used = max(0, int(item.get("image_quota_used") or 0))
+        except (TypeError, ValueError):
+            image_quota_used = 0
+        return {
+            "id": item.get("id"),
+            "name": item.get("name"),
+            "role": item.get("role"),
+            "enabled": bool(item.get("enabled", True)),
+            "created_at": item.get("created_at"),
+            "last_used_at": item.get("last_used_at"),
+            "image_quota_limit": image_quota_limit,
+            "image_quota_used": image_quota_used,
+            "image_quota_remaining": None if image_quota_limit is None else max(0, image_quota_limit - image_quota_used),
+        }
+
+    def update_auth_key_last_used(self, key_id: str, last_used_at: str | None = None) -> dict[str, Any] | None:
+        """仅更新单个鉴权密钥的 last_used_at，避免覆盖其它平台刚写入的额度。"""
+        normalized_id = str(key_id or "").strip()
+        if not normalized_id:
+            return None
+        timestamp = last_used_at or datetime.now(timezone.utc).isoformat()
+        session = self.Session()
+        try:
+            row = session.query(AuthKeyModel).filter(AuthKeyModel.key_id == normalized_id).with_for_update().one_or_none()
+            if row is None:
+                return None
+            item = json.loads(row.data)
+            if not isinstance(item, dict):
+                return None
+            item["last_used_at"] = timestamp
+            row.data = json.dumps(item, ensure_ascii=False)
+            session.commit()
+            return self._public_auth_key(item)
+        except Exception as e:
+            session.rollback()
+            raise e
+        finally:
+            session.close()
+
+    def consume_auth_key_image_quota(self, key_id: str, amount: int = 1) -> dict[str, Any] | None:
+        """在数据库事务内原子扣减单个用户密钥额度。"""
+        normalized_id = str(key_id or "").strip()
+        increment = max(1, int(amount or 1))
+        if not normalized_id:
+            return None
+        session = self.Session()
+        try:
+            row = session.query(AuthKeyModel).filter(AuthKeyModel.key_id == normalized_id).with_for_update().one_or_none()
+            if row is None:
+                return None
+            item = json.loads(row.data)
+            if not isinstance(item, dict) or item.get("role") != "user":
+                return None
+            limit_value = item.get("image_quota_limit")
+            try:
+                limit = None if limit_value is None or limit_value == "" else max(0, int(limit_value))
+            except (TypeError, ValueError):
+                limit = None
+            try:
+                used = max(0, int(item.get("image_quota_used") or 0))
+            except (TypeError, ValueError):
+                used = 0
+            if limit is not None and used + increment > limit:
+                raise ValueError("生图次数已用完")
+            item["image_quota_limit"] = limit
+            item["image_quota_used"] = used + increment
+            row.data = json.dumps(item, ensure_ascii=False)
+            session.commit()
+            return self._public_auth_key(item)
+        except Exception as e:
+            session.rollback()
+            raise e
+        finally:
+            session.close()
 
     def _load_rows(self, model: type[AccountModel] | type[AuthKeyModel]) -> list[dict[str, Any]]:
         session = self.Session()

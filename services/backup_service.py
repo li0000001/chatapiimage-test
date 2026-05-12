@@ -170,10 +170,21 @@ class S3StorageClient:
     def _preset(self) -> dict[str, str]:
         return self._PRESETS.get(self.provider, self._PRESETS["generic_s3"])
 
+    @staticmethod
+    def _extract_region_from_endpoint(endpoint: str) -> str:
+        """从 endpoint URL 中自动提取 region，如 https://s3.us-east-005.backblazeb2.com → us-east-005"""
+        import re
+        match = re.search(r"s3\.([a-z0-9-]+)\.(backblazeb2\.com|amazonaws\.com)", endpoint)
+        return match.group(1) if match else ""
+
     @property
     def region(self) -> str:
         if self.custom_region:
             return self.custom_region
+        if self.custom_endpoint:
+            extracted = self._extract_region_from_endpoint(self.custom_endpoint)
+            if extracted:
+                return extracted
         return self._preset["default_region"]
 
     @property

@@ -229,8 +229,8 @@ export function BackupSettingsCard() {
           {(backup.provider === "generic_s3" || backup.provider === "backblaze_b2" || backup.provider === "aws_s3") && (
             <div className="space-y-2">
               <label className="text-sm text-stone-700">S3 Endpoint（可选）</label>
-              <Input value={String(backup.s3_endpoint || "")} onChange={(event) => setBackupField("s3_endpoint", event.target.value)} placeholder="https://s3.us-west-004.backblazeb2.com" className="h-10 rounded-xl border-stone-200 bg-white" />
-              <p className="text-xs text-stone-500">留空则使用提供商默认地址。Backblaze B2 格式：https://s3.{region}.backblazeb2.com</p>
+              <Input value={String(backup.s3_endpoint || "")} onChange={(event) => setBackupField("s3_endpoint", event.target.value)} placeholder="https://s3.us-east-005.backblazeb2.com" className="h-10 rounded-xl border-stone-200 bg-white" />
+              <p className="text-xs text-stone-500">留空则使用提供商默认地址。Backblaze B2 格式：https://s3.us-west-004.backblazeb2.com</p>
             </div>
           )}
 

@@ -52,7 +52,8 @@ def _normalize_backup_include(value: object) -> dict[str, bool]:
     source = value if isinstance(value, dict) else {}
     normalized = dict(DEFAULT_BACKUP_INCLUDE)
     for key in normalized:
-        normalized[key] = _normalize_bool(source.get(key), normalized[key])
+        env_key = f"BACKUP_INCLUDE_{key.upper()}"
+        normalized[key] = _normalize_bool(source.get(key) if key in source else os.getenv(env_key), normalized[key])
     return normalized
 
 

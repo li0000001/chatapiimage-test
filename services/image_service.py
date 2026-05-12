@@ -6,7 +6,7 @@ from datetime import datetime
 from pathlib import Path
 
 from fastapi import HTTPException
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, Response
 from PIL import Image, ImageOps
 
 from services.config import config
@@ -41,6 +41,15 @@ def _safe_image_path(relative_path: str) -> Path:
         path.relative_to(root)
     except ValueError as exc:
         raise HTTPException(status_code=404, detail="image not found") from exc
+    if not path.is_file():
+        try:
+            from services.backup_service import backup_service
+            payload = backup_service.download_runtime_bytes(f"images/{rel}")
+            if payload:
+                path.parent.mkdir(parents=True, exist_ok=True)
+                path.write_bytes(payload)
+        except Exception:
+            pass
     if not path.is_file():
         raise HTTPException(status_code=404, detail="image not found")
     return path
@@ -89,6 +98,10 @@ def get_thumbnail_response(relative_path: str) -> FileResponse:
     return FileResponse(ensure_thumbnail(relative_path))
 
 
+def get_image_response(relative_path: str) -> FileResponse:
+    return FileResponse(_safe_image_path(relative_path))
+
+
 def get_image_download_response(relative_path: str) -> FileResponse:
     path = _safe_image_path(relative_path)
     return FileResponse(path, filename=path.name)
@@ -111,6 +124,7 @@ def cleanup_image_thumbnails() -> int:
 
 def _image_items(start_date: str = "", end_date: str = "") -> list[dict[str, object]]:
     items = []
+    seen_paths: set[str] = set()
     root = config.images_dir
     for path in root.rglob("*"):
         if not path.is_file():
@@ -123,6 +137,7 @@ def _image_items(start_date: str = "", end_date: str = "") -> list[dict[str, obj
         if end_date and day > end_date:
             continue
         dimensions = _image_dimensions(path)
+        seen_paths.add(rel)
         items.append({
             "rel": rel,
             "path": rel,
@@ -132,6 +147,33 @@ def _image_items(start_date: str = "", end_date: str = "") -> list[dict[str, obj
             "created_at": datetime.fromtimestamp(path.stat().st_mtime).strftime("%Y-%m-%d %H:%M:%S"),
             **({"width": dimensions[0], "height": dimensions[1]} if dimensions else {}),
         })
+    try:
+        from services.backup_service import backup_service
+        for remote in backup_service.list_runtime_objects("images"):
+            rel = str(remote.get("runtime_key") or "")
+            if not rel.startswith("images/"):
+                continue
+            rel = rel[len("images/"):]
+            if not rel or rel in seen_paths:
+                continue
+            parts = rel.split("/")
+            day = "-".join(parts[:3]) if len(parts) >= 4 else str(remote.get("updated_at") or "")[:10]
+            if start_date and day < start_date:
+                continue
+            if end_date and day > end_date:
+                continue
+            updated_at = str(remote.get("updated_at") or "")
+            items.append({
+                "rel": rel,
+                "path": rel,
+                "name": Path(rel).name,
+                "date": day,
+                "size": int(remote.get("size") or 0),
+                "created_at": updated_at.replace("T", " ").replace("Z", "")[:19] or day,
+                "remote": True,
+            })
+    except Exception:
+        pass
     items.sort(key=lambda item: str(item["created_at"]), reverse=True)
     return items
 
@@ -165,8 +207,17 @@ def delete_images(paths: list[str] | None = None, start_date: str = "", end_date
             path.relative_to(root)
         except ValueError:
             continue
+        deleted = False
         if path.is_file():
             path.unlink()
+            deleted = True
+        try:
+            from services.backup_service import backup_service
+            backup_service.delete_runtime_object(f"images/{_safe_relative_path(item)}")
+            deleted = True
+        except Exception:
+            pass
+        if deleted:
             for thumbnail in (_thumbnail_path(item), config.image_thumbnails_dir / _safe_relative_path(item)):
                 if thumbnail.is_file():
                     thumbnail.unlink()

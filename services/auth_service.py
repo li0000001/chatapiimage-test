@@ -249,6 +249,14 @@ class AuthService:
         amount = max(1, int(count or 1))
         if not key_id:
             raise ValueError("image quota identity is required")
+        atomic_consume = getattr(self.storage, "consume_auth_key_image_quota", None)
+        if callable(atomic_consume):
+            item = atomic_consume(key_id, amount)
+            if item is None:
+                raise ValueError("user key not found")
+            with self._lock:
+                self._reload_locked()
+            return item
         with self._lock:
             self._reload_locked()
             for index, item in enumerate(self._items):
@@ -303,7 +311,11 @@ class AuthService:
                 last_flush_at = self._last_used_flush_at.get(item_id)
                 if last_flush_at is None or (now - last_flush_at).total_seconds() >= 60:
                     try:
-                        self._save()
+                        update_last_used = getattr(self.storage, "update_auth_key_last_used", None)
+                        if callable(update_last_used) and item_id:
+                            update_last_used(item_id, next_item["last_used_at"])
+                        else:
+                            self._save()
                         self._last_used_flush_at[item_id] = now
                     except Exception:
                         pass

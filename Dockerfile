@@ -42,7 +42,7 @@ COPY pyproject.toml uv.lock ./
 RUN uv sync --frozen --no-dev --no-install-project
 
 COPY main.py ./
-COPY config.json ./
+# COPY config.json ./
 COPY VERSION ./
 COPY api ./api
 COPY services ./services

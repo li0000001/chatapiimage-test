@@ -144,10 +144,19 @@ class ImageTaskService:
         }
         return self._submit(identity, client_task_id=client_task_id, mode="edit", payload=payload)
 
+    def _sync_from_bucket_locked(self) -> None:
+        try:
+            from services.backup_service import backup_service
+            if backup_service.sync_runtime_file_from_bucket(self.path, "image_tasks.json"):
+                self._tasks = self._load_locked()
+        except Exception:
+            pass
+
     def list_tasks(self, identity: dict[str, object], task_ids: list[str]) -> dict[str, Any]:
         owner = _owner_id(identity)
         requested_ids = [_clean(task_id) for task_id in task_ids if _clean(task_id)]
         with self._lock:
+            self._sync_from_bucket_locked()
             if self._cleanup_locked():
                 self._save_locked()
             items = []
@@ -184,6 +193,7 @@ class ImageTaskService:
         now = _now_iso()
         should_start = False
         with self._lock:
+            self._sync_from_bucket_locked()
             cleaned = self._cleanup_locked()
             task = self._tasks.get(key)
             if task is not None:
@@ -349,6 +359,11 @@ class ImageTaskService:
         tmp_path = self.path.with_suffix(self.path.suffix + ".tmp")
         tmp_path.write_text(json.dumps({"tasks": items}, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
         tmp_path.replace(self.path)
+        try:
+            from services.backup_service import backup_service
+            backup_service.upload_runtime_file(self.path, "image_tasks.json", content_type="application/json")
+        except Exception:
+            pass
 
     def _recover_unfinished_locked(self) -> bool:
         changed = False

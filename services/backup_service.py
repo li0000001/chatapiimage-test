@@ -423,12 +423,122 @@ class BackupService:
 
     def is_configured(self) -> bool:
         settings = config.get_backup_settings()
-        return all([
-            _clean(settings.get("account_id")),
-            _clean(settings.get("access_key_id")),
-            _clean(settings.get("secret_access_key")),
-            _clean(settings.get("bucket")),
-        ])
+        client = S3StorageClient(settings)
+        try:
+            client.validate()
+            return True
+        except Exception:
+            return False
+        finally:
+            client.close()
+
+    def runtime_sync_enabled(self) -> bool:
+        settings = config.get_backup_settings()
+        if not settings.get("enabled"):
+            return False
+        return _clean(os.getenv("BACKUP_RUNTIME_SYNC", "true")).lower() not in {"0", "false", "no", "off"}
+
+    def upload_runtime_bytes(self, key: str, payload: bytes, *, content_type: str = "application/octet-stream") -> None:
+        if not payload or not self.runtime_sync_enabled():
+            return
+        settings = config.get_backup_settings()
+        client = S3StorageClient(settings)
+        try:
+            client.validate()
+            object_key = f"{client.prefix.rstrip('/')}/runtime/{key.lstrip('/')}"
+            client.upload_bytes(object_key, payload, content_type=content_type)
+        finally:
+            client.close()
+
+    def upload_runtime_file(self, path: Path, key: str | None = None, *, content_type: str | None = None) -> None:
+        if not self.runtime_sync_enabled() or not path.exists() or not path.is_file():
+            return
+        object_key = key
+        if object_key is None:
+            try:
+                object_key = path.relative_to(DATA_DIR).as_posix()
+            except ValueError:
+                object_key = path.name
+        self.upload_runtime_bytes(object_key, path.read_bytes(), content_type=content_type or _guess_content_type(path.name))
+
+    def download_runtime_bytes(self, key: str) -> bytes | None:
+        if not self.runtime_sync_enabled():
+            return None
+        settings = config.get_backup_settings()
+        client = S3StorageClient(settings)
+        try:
+            client.validate()
+            object_key = f"{client.prefix.rstrip('/')}/runtime/{key.lstrip('/')}"
+            return client.download_bytes(object_key)
+        except Exception:
+            return None
+        finally:
+            client.close()
+
+    def sync_runtime_file_from_bucket(self, path: Path, key: str | None = None) -> bool:
+        if not self.runtime_sync_enabled():
+            return False
+        object_key = key
+        if object_key is None:
+            try:
+                object_key = path.relative_to(DATA_DIR).as_posix()
+            except ValueError:
+                object_key = path.name
+        payload = self.download_runtime_bytes(object_key)
+        if payload is None:
+            return False
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_bytes(payload)
+        return True
+
+    def list_runtime_objects(self, prefix: str = "") -> list[dict[str, object]]:
+        if not self.runtime_sync_enabled():
+            return []
+        settings = config.get_backup_settings()
+        client = S3StorageClient(settings)
+        try:
+            client.validate()
+            base_prefix = f"{client.prefix.rstrip('/')}/runtime/{prefix.strip('/')}".rstrip("/")
+            query_prefix = f"{base_prefix}/" if prefix.strip("/") else f"{client.prefix.rstrip('/')}/runtime/"
+            items: list[dict[str, object]] = []
+            continuation = ""
+            while True:
+                query = {"list-type": "2", "prefix": query_prefix, "max-keys": "1000"}
+                if continuation:
+                    query["continuation-token"] = continuation
+                response = client._request("GET", query=query, timeout=30.0)
+                if response.status_code >= 400:
+                    return []
+                text = response.text
+                for block in text.split("<Contents>")[1:]:
+                    key = _clean(block.split("<Key>", 1)[1].split("</Key>", 1)[0]) if "<Key>" in block else ""
+                    if not key:
+                        continue
+                    size_text = _clean(block.split("<Size>", 1)[1].split("</Size>", 1)[0]) if "<Size>" in block else "0"
+                    updated = _clean(block.split("<LastModified>", 1)[1].split("</LastModified>", 1)[0]) if "<LastModified>" in block else ""
+                    relative_key = key[len(f"{client.prefix.rstrip('/')}/runtime/"):] if key.startswith(f"{client.prefix.rstrip('/')}/runtime/") else key
+                    items.append({"key": key, "runtime_key": relative_key, "size": int(size_text or 0), "updated_at": updated})
+                if "<IsTruncated>true</IsTruncated>" not in text or "<NextContinuationToken>" not in text:
+                    break
+                continuation = _clean(text.split("<NextContinuationToken>", 1)[1].split("</NextContinuationToken>", 1)[0])
+                if not continuation:
+                    break
+            items.sort(key=lambda item: str(item.get("updated_at") or ""), reverse=True)
+            return items
+        finally:
+            client.close()
+
+    def delete_runtime_object(self, key: str) -> None:
+        if not self.runtime_sync_enabled():
+            return
+        settings = config.get_backup_settings()
+        client = S3StorageClient(settings)
+        try:
+            client.validate()
+            object_key = f"{client.prefix.rstrip('/')}/runtime/{key.lstrip('/')}"
+            client.delete_object(object_key)
+        finally:
+            client.close()
 
     def get_settings(self) -> dict[str, object]:
         settings = dict(config.get_backup_settings())

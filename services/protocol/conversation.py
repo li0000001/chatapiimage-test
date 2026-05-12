@@ -74,6 +74,15 @@ def save_image_bytes(image_data: bytes, base_url: str | None = None) -> str:
     file_path = config.images_dir / relative_dir / filename
     file_path.parent.mkdir(parents=True, exist_ok=True)
     file_path.write_bytes(image_data)
+    try:
+        from services.backup_service import backup_service
+        backup_service.upload_runtime_bytes(
+            f"images/{relative_dir.as_posix()}/{filename}",
+            image_data,
+            content_type="image/png",
+        )
+    except Exception:
+        pass
     return f"{(base_url or config.base_url)}/images/{relative_dir.as_posix()}/{filename}"
 
 

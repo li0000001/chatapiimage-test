@@ -710,7 +710,7 @@ class BackupService:
                     _json_bytes(config.get_storage_backend().load_auth_keys()),
                 )
             if include.get("images"):
-                self._add_file_to_archive(archive, TAGS_FILE, "data/image_tags.json")
+                self._add_file_to_archive(archive, TAGS_FILE, "data/image_tags.json") 
                 self._add_directory_to_archive(archive, config.images_dir, "data/images")
         return buffer.getvalue()
 

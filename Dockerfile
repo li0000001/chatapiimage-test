@@ -42,8 +42,8 @@ COPY pyproject.toml uv.lock ./
 RUN uv sync --frozen --no-dev --no-install-project
 
 COPY main.py ./
+# COPY config.json ./
 COPY VERSION ./
-# config.json 是运行时生成的配置文件，不需要在构建时复制
 COPY api ./api
 COPY services ./services
 COPY utils ./utils

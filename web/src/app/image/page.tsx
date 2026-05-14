@@ -1138,9 +1138,9 @@ function ImagePageContent({ isUserMode }: { isUserMode: boolean }) {
     <>
       <section
         className={cn(
-          "mx-auto grid h-[calc(100dvh-6.5rem)] min-h-0 w-full max-w-[1380px] grid-cols-1 gap-2 overflow-hidden px-0 pb-[calc(env(safe-area-inset-bottom)+0.5rem)] sm:h-[calc(100dvh-5.25rem)] sm:gap-3 sm:px-3 sm:pb-6 lg:grid-cols-[240px_minmax(0,1fr)]",
+          "mx-auto grid h-[calc(100dvh-4.75rem)] min-h-0 w-full max-w-[1380px] grid-cols-1 gap-2 overflow-hidden px-0 pb-0 sm:h-[calc(100dvh-5.25rem)] sm:gap-3 sm:px-3 sm:pb-0 lg:grid-cols-[240px_minmax(0,1fr)]",
           isUserMode &&
-            "h-[calc(100dvh-6rem)] rounded-[28px] border border-white/70 bg-white/54 p-2 shadow-[0_22px_90px_-60px_rgba(15,23,42,0.55)] backdrop-blur-xl sm:h-[calc(100dvh-7rem)] sm:p-3 lg:grid-cols-[280px_minmax(0,1fr)]",
+            "rounded-[28px] border border-white/70 bg-white/54 p-2 shadow-[0_22px_90px_-60px_rgba(15,23,42,0.55)] backdrop-blur-xl sm:p-3 lg:grid-cols-[280px_minmax(0,1fr)]",
         )}
       >
         <div
@@ -1195,8 +1195,8 @@ function ImagePageContent({ isUserMode }: { isUserMode: boolean }) {
           </DialogContent>
         </Dialog>
 
-        <div className="flex min-h-0 flex-col gap-2 sm:gap-4">
-          <div className="flex items-center justify-between gap-2 px-1 lg:hidden">
+        <div className="flex min-h-0 flex-col gap-2 overflow-hidden sm:gap-4">
+          <div className="flex shrink-0 items-center justify-between gap-2 px-1 lg:hidden">
             <Button
               variant="outline"
               className={cn(

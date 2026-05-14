@@ -95,8 +95,10 @@ export function ImageComposer({
     if (!isSizeMenuOpen && sizeMenuBtnRef.current) {
       const rect = sizeMenuBtnRef.current.getBoundingClientRect();
       const menuWidth = Math.min(220, window.innerWidth - 24);
+      const menuHeight = Math.min(320, window.innerHeight - 24);
+      const hasRoomBelow = window.innerHeight - rect.bottom - 12 >= menuHeight;
       setSizeMenuPos({
-        top: Math.max(12, rect.top - 8),
+        top: hasRoomBelow ? rect.bottom + 8 : Math.max(12, rect.top - menuHeight - 8),
         left: Math.max(12, Math.min(rect.left, window.innerWidth - menuWidth - 12)),
       });
     }
@@ -296,11 +298,10 @@ export function ImageComposer({
                     {isSizeMenuOpen ? (
                       <div
                         ref={sizeMenuRef}
-                        className="fixed z-[80] hidden max-h-[45dvh] overflow-y-auto rounded-3xl border border-white/80 bg-white p-2 shadow-[0_24px_80px_-32px_rgba(15,23,42,0.35)] sm:block"
+                        className="fixed z-[1000] hidden max-h-[min(320px,calc(100dvh-1.5rem))] overflow-y-auto rounded-3xl border border-white/80 bg-white p-2 shadow-[0_24px_80px_-32px_rgba(15,23,42,0.35)] sm:block"
                         style={{
                           top: sizeMenuPos.top,
                           left: sizeMenuPos.left,
-                          transform: "translateY(-100%)",
                           width: "min(220px, calc(100vw - 1.5rem))",
                         }}
                       >

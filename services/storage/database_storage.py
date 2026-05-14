@@ -65,6 +65,26 @@ class DatabaseStorageBackend(StorageBackend):
         """保存账号数据到数据库"""
         self._save_rows(AccountModel, accounts, "access_token")
 
+    def upsert_accounts(self, accounts: list[dict[str, Any]]) -> None:
+        """Upsert only the provided accounts for multi-instance deployments."""
+        self._upsert_rows(AccountModel, accounts, "access_token")
+
+    def delete_accounts(self, access_tokens: list[str]) -> int:
+        """Delete only the provided account tokens."""
+        tokens = [str(token or "").strip() for token in access_tokens if str(token or "").strip()]
+        if not tokens:
+            return 0
+        session = self.Session()
+        try:
+            removed = session.query(AccountModel).filter(AccountModel.access_token.in_(tokens)).delete(synchronize_session=False)
+            session.commit()
+            return int(removed or 0)
+        except Exception as e:
+            session.rollback()
+            raise e
+        finally:
+            session.close()
+
     def load_auth_keys(self) -> list[dict[str, Any]]:
         """从数据库加载鉴权密钥数据"""
         return self._load_rows(AuthKeyModel)
@@ -182,6 +202,8 @@ class DatabaseStorageBackend(StorageBackend):
         session = self.Session()
         try:
             key_column = target_key or source_key
+            key_attr = getattr(model, key_column)
+            key_values: list[str] = []
             
             for item in items:
                 if not isinstance(item, dict):
@@ -189,6 +211,7 @@ class DatabaseStorageBackend(StorageBackend):
                 key_value = str(item.get(source_key) or "").strip()
                 if not key_value:
                     continue
+                key_values.append(key_value)
                 
                 # 使用 PostgreSQL UPSERT (INSERT ON CONFLICT UPDATE)
                 stmt = pg_insert(model).values(
@@ -199,7 +222,43 @@ class DatabaseStorageBackend(StorageBackend):
                     set_={"data": json.dumps(item, ensure_ascii=False)}
                 )
                 session.execute(stmt)
+
+            delete_query = session.query(model)
+            if key_values:
+                delete_query = delete_query.filter(~key_attr.in_(key_values))
+            delete_query.delete(synchronize_session=False)
             
+            session.commit()
+        except Exception as e:
+            session.rollback()
+            raise e
+        finally:
+            session.close()
+
+    def _upsert_rows(
+        self,
+        model: type[AccountModel] | type[AuthKeyModel],
+        items: list[dict[str, Any]],
+        source_key: str,
+        target_key: str | None = None,
+    ) -> None:
+        session = self.Session()
+        try:
+            key_column = target_key or source_key
+            for item in items:
+                if not isinstance(item, dict):
+                    continue
+                key_value = str(item.get(source_key) or "").strip()
+                if not key_value:
+                    continue
+                stmt = pg_insert(model).values(
+                    **{key_column: key_value},
+                    data=json.dumps(item, ensure_ascii=False),
+                ).on_conflict_do_update(
+                    index_elements=[key_column],
+                    set_={"data": json.dumps(item, ensure_ascii=False)}
+                )
+                session.execute(stmt)
             session.commit()
         except Exception as e:
             session.rollback()

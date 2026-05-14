@@ -183,13 +183,13 @@ export function ImageComposer({
 
             <div
               className={cn(
-                "rounded-b-[24px] border-t border-stone-100 bg-white px-3 pb-3 pt-2 sm:absolute sm:inset-x-0 sm:bottom-0 sm:rounded-b-none sm:border-t-0 sm:bg-gradient-to-t sm:from-white sm:via-white/95 sm:to-transparent sm:px-6 sm:pb-4 sm:pt-6",
+                "rounded-b-[24px] border-t border-stone-100 bg-white px-3 pb-[calc(env(safe-area-inset-bottom)+0.75rem)] pt-2 sm:absolute sm:inset-x-0 sm:bottom-0 sm:rounded-b-none sm:border-t-0 sm:bg-gradient-to-t sm:from-white sm:via-white/95 sm:to-transparent sm:px-6 sm:pb-4 sm:pt-6",
                 isUserMode && "border-slate-100 bg-slate-50/70 sm:from-white sm:via-white/96",
               )}
               onClick={(event) => event.stopPropagation()}
             >
-              <div className="flex items-end justify-between gap-2 sm:gap-3">
-                <div className="hide-scrollbar flex min-w-0 flex-1 flex-nowrap items-center gap-1.5 overflow-x-auto pb-0.5 sm:flex-wrap sm:gap-3 sm:overflow-visible sm:pb-0">
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between sm:gap-3">
+                <div className="flex min-w-0 flex-wrap items-center gap-2 sm:flex-1 sm:gap-3">
                   <Button
                     type="button"
                     variant="outline"
@@ -217,9 +217,12 @@ export function ImageComposer({
                       {activeTaskCount}<span className="hidden sm:inline"> 个任务处理中</span>
                     </div>
                   )}
+                </div>
+
+                <div className="flex w-full min-w-0 items-center gap-2 sm:w-auto sm:gap-3">
                   <div
                     className={cn(
-                      "flex h-9 shrink-0 items-center gap-1.5 rounded-full border border-stone-200 bg-white px-2 py-0.5 sm:h-auto sm:gap-2 sm:px-3 sm:py-1",
+                      "flex h-10 shrink-0 items-center gap-1.5 rounded-full border border-stone-200 bg-white px-2 py-0.5 sm:h-auto sm:gap-2 sm:px-3 sm:py-1",
                       isUserMode && "border-slate-200",
                     )}
                   >
@@ -237,7 +240,7 @@ export function ImageComposer({
                   </div>
                   <div
                     className={cn(
-                      "relative flex h-9 shrink-0 items-center gap-1.5 rounded-full border border-stone-200 bg-white px-2 py-0.5 text-[11px] sm:h-auto sm:gap-2 sm:px-3 sm:py-1 sm:text-[13px]",
+                      "relative flex h-10 min-w-0 flex-1 items-center gap-1.5 rounded-full border border-stone-200 bg-white px-3 py-0.5 text-[11px] sm:h-auto sm:w-[180px] sm:flex-none sm:gap-2 sm:px-3 sm:py-1 sm:text-[13px]",
                       isUserMode && "border-slate-200",
                     )}
                   >
@@ -245,12 +248,15 @@ export function ImageComposer({
                     <button
                       ref={sizeMenuBtnRef}
                       type="button"
-                      className="flex h-7 w-[78px] items-center justify-between bg-transparent text-left text-xs font-bold text-stone-700 min-[390px]:w-[96px] sm:h-8 sm:w-[132px]"
+                      className="flex h-8 min-w-0 flex-1 items-center justify-between bg-transparent text-left text-xs font-bold text-stone-700 sm:w-[132px] sm:flex-none"
                       onClick={() => {
                         if (!isSizeMenuOpen && sizeMenuBtnRef.current) {
                           const rect = sizeMenuBtnRef.current.getBoundingClientRect();
-                          const menuWidth = Math.min(186, window.innerWidth - 32);
-                          setSizeMenuPos({ top: rect.top - 8, left: Math.max(16, Math.min(rect.left, window.innerWidth - menuWidth - 16)) });
+                          const menuWidth = Math.min(210, window.innerWidth - 24);
+                          setSizeMenuPos({
+                            top: Math.max(12, rect.top - 8),
+                            left: Math.max(12, Math.min(rect.left, window.innerWidth - menuWidth - 12)),
+                          });
                         }
                         setIsSizeMenuOpen((open) => !open);
                       }}
@@ -266,7 +272,7 @@ export function ImageComposer({
                           top: sizeMenuPos.top,
                           left: sizeMenuPos.left,
                           transform: "translateY(-100%)",
-                          width: "min(186px, calc(100vw - 2rem))",
+                          width: "min(210px, calc(100vw - 1.5rem))",
                         }}
                       >
                         {imageSizeOptions.map((option) => {
@@ -293,9 +299,7 @@ export function ImageComposer({
                     ) : null}
                   </div>
 
-                </div>
-
-                <button
+                  <button
                   type="button"
                   onClick={() => void onSubmit()}
                   disabled={!prompt.trim()}
@@ -307,6 +311,7 @@ export function ImageComposer({
                 >
                   <ArrowUp className="size-3.5 sm:size-4" />
                 </button>
+                </div>
               </div>
             </div>
           </div>

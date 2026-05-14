@@ -33,8 +33,28 @@ class AccountService:
             if (normalized := self._normalize_account(item)) is not None
         }
 
+    def _reload_accounts_locked(self) -> None:
+        self._accounts = self._load_accounts()
+        self._index %= len(self._accounts) if self._accounts else 1
+        for access_token in list(self._image_inflight):
+            if access_token not in self._accounts:
+                self._image_inflight.pop(access_token, None)
+
     def _save_accounts(self) -> None:
         self.storage.save_accounts(list(self._accounts.values()))
+
+    def _upsert_accounts(self, accounts: list[dict]) -> None:
+        upsert_accounts = getattr(self.storage, "upsert_accounts", None)
+        if callable(upsert_accounts):
+            upsert_accounts(accounts)
+        else:
+            self._save_accounts()
+
+    def _delete_account_tokens(self, tokens: list[str]) -> int | None:
+        delete_accounts = getattr(self.storage, "delete_accounts", None)
+        if callable(delete_accounts):
+            return int(delete_accounts(tokens) or 0)
+        return None
 
     @staticmethod
     def _is_image_account_available(account: dict) -> bool:
@@ -71,6 +91,7 @@ class AccountService:
 
     def list_tokens(self) -> list[str]:
         with self._lock:
+            self._reload_accounts_locked()
             return list(self._accounts)
 
     def _list_ready_candidate_tokens(self, excluded_tokens: set[str] | None = None) -> list[str]:
@@ -94,6 +115,7 @@ class AccountService:
     def _acquire_next_candidate_token(self, excluded_tokens: set[str] | None = None) -> str:
         with self._image_slot_condition:
             while True:
+                self._reload_accounts_locked()
                 if not self._list_ready_candidate_tokens(excluded_tokens):
                     raise RuntimeError("no available image quota")
                 tokens = self._list_available_candidate_tokens(excluded_tokens)
@@ -132,6 +154,7 @@ class AccountService:
     def get_text_access_token(self, excluded_tokens: set[str] | None = None) -> str:
         excluded = set(excluded_tokens or set())
         with self._lock:
+            self._reload_accounts_locked()
             candidates = [
                 token
                 for account in self._accounts.values()
@@ -149,6 +172,7 @@ class AccountService:
         if not access_token:
             return
         with self._lock:
+            self._reload_accounts_locked()
             current = self._accounts.get(access_token)
             if current is None:
                 return
@@ -158,7 +182,7 @@ class AccountService:
             if account is None:
                 return
             self._accounts[access_token] = account
-            self._save_accounts()
+            self._upsert_accounts([account])
 
     def remove_invalid_token(self, access_token: str, event: str) -> bool:
         if not config.auto_remove_invalid_accounts:
@@ -176,15 +200,18 @@ class AccountService:
         if not access_token:
             return None
         with self._lock:
+            self._reload_accounts_locked()
             account = self._accounts.get(access_token)
             return dict(account) if account else None
 
     def list_accounts(self) -> list[dict]:
         with self._lock:
+            self._reload_accounts_locked()
             return [dict(item) for item in self._accounts.values()]
 
     def get_image_quota_summary(self) -> dict[str, int]:
         with self._lock:
+            self._reload_accounts_locked()
             accounts = list(self._accounts.values())
             available_accounts = [item for item in accounts if self._is_image_account_available(item)]
             return {
@@ -195,6 +222,7 @@ class AccountService:
 
     def list_limited_tokens(self) -> list[str]:
         with self._lock:
+            self._reload_accounts_locked()
             return [
                 token
                 for item in self._accounts.values()
@@ -208,6 +236,7 @@ class AccountService:
             return {"added": 0, "skipped": 0, "items": self.list_accounts()}
 
         with self._lock:
+            self._reload_accounts_locked()
             added = 0
             skipped = 0
             for access_token in tokens:
@@ -226,7 +255,9 @@ class AccountService:
                 )
                 if account is not None:
                     self._accounts[access_token] = account
-            self._save_accounts()
+            changed_accounts = [dict(item) for item in self._accounts.values() if item.get("access_token") in tokens]
+            self._upsert_accounts(changed_accounts)
+            self._reload_accounts_locked()
             items = [dict(item) for item in self._accounts.values()]
             log_service.add(LOG_TYPE_ACCOUNT, f"新增 {added} 个账号，跳过 {skipped} 个",
                             {"added": added, "skipped": skipped})
@@ -237,7 +268,12 @@ class AccountService:
         if not target_set:
             return {"removed": 0, "items": self.list_accounts()}
         with self._lock:
-            removed = sum(self._accounts.pop(token, None) is not None for token in target_set)
+            self._reload_accounts_locked()
+            storage_removed = self._delete_account_tokens(list(target_set))
+            removed = storage_removed if storage_removed is not None else sum(self._accounts.pop(token, None) is not None for token in target_set)
+            if storage_removed is not None:
+                for token in target_set:
+                    self._accounts.pop(token, None)
             for token in target_set:
                 self._image_inflight.pop(token, None)
             if removed:
@@ -245,8 +281,10 @@ class AccountService:
                     self._index %= len(self._accounts)
                 else:
                     self._index = 0
-                self._save_accounts()
+                if storage_removed is None:
+                    self._save_accounts()
                 log_service.add(LOG_TYPE_ACCOUNT, f"删除 {removed} 个账号", {"removed": removed})
+            self._reload_accounts_locked()
             items = [dict(item) for item in self._accounts.values()]
         return {"removed": removed, "items": items}
 
@@ -254,6 +292,7 @@ class AccountService:
         if not access_token:
             return None
         with self._lock:
+            self._reload_accounts_locked()
             current = self._accounts.get(access_token)
             if current is None:
                 return None
@@ -262,11 +301,13 @@ class AccountService:
                 return None
             if account.get("status") == "限流" and config.auto_remove_rate_limited_accounts:
                 self._accounts.pop(access_token, None)
-                self._save_accounts()
+                storage_removed = self._delete_account_tokens([access_token])
+                if storage_removed is None:
+                    self._save_accounts()
                 log_service.add(LOG_TYPE_ACCOUNT, "自动移除限流账号", {"token": anonymize_token(access_token)})
                 return None
             self._accounts[access_token] = account
-            self._save_accounts()
+            self._upsert_accounts([account])
             log_service.add(LOG_TYPE_ACCOUNT, "更新账号",
                             {"token": anonymize_token(access_token), "status": account.get("status")})
             return dict(account)
@@ -277,6 +318,7 @@ class AccountService:
             return None
         self.release_image_slot(access_token)
         with self._lock:
+            self._reload_accounts_locked()
             current = self._accounts.get(access_token)
             if current is None:
                 return None
@@ -299,11 +341,13 @@ class AccountService:
                 return None
             if account.get("status") == "限流" and config.auto_remove_rate_limited_accounts:
                 self._accounts.pop(access_token, None)
-                self._save_accounts()
+                storage_removed = self._delete_account_tokens([access_token])
+                if storage_removed is None:
+                    self._save_accounts()
                 log_service.add(LOG_TYPE_ACCOUNT, "自动移除限流账号", {"token": anonymize_token(access_token)})
                 return None
             self._accounts[access_token] = account
-            self._save_accounts()
+            self._upsert_accounts([account])
             return dict(account)
         return None
 

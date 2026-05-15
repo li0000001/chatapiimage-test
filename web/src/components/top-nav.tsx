@@ -69,7 +69,7 @@ export function TopNav() {
 
   if (!isAdmin) {
     return (
-      <header className="sticky top-0 z-40 pt-2">
+      <header className="sticky top-0 z-40 pt-[env(safe-area-inset-top)]">
         <div className="mx-auto flex min-h-14 max-w-[1380px] items-center justify-between gap-3 rounded-[24px] border border-white/75 bg-white/82 px-3 py-2 shadow-[0_18px_70px_-48px_rgba(15,23,42,0.55)] backdrop-blur-xl sm:min-h-16 sm:px-5">
           <Link href="/image" className="flex min-w-0 items-center gap-3">
             <span className="flex size-10 shrink-0 items-center justify-center rounded-2xl bg-slate-950 text-white">
@@ -122,7 +122,7 @@ export function TopNav() {
 
   return (
     <>
-      <header className="sticky top-0 z-40 pt-2">
+      <header className="sticky top-0 z-40 pt-[env(safe-area-inset-top)]">
         <div className="mx-auto flex min-h-12 items-center justify-between gap-3 rounded-[20px] border border-white/60 bg-white/78 px-3 py-2 shadow-[0_8px_40px_-20px_rgba(15,23,42,0.15)] backdrop-blur-xl sm:min-h-14 sm:gap-6 sm:rounded-[24px] sm:px-5">
           <div className="flex items-center gap-3">
             <Link href="/image" className="flex items-center gap-2.5">

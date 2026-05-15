@@ -1,11 +1,10 @@
 "use client";
-import { ArrowUp, ImagePlus, LoaderCircle, X } from "lucide-react";
+import { ArrowUp, ChevronDown, ImagePlus, LoaderCircle, X } from "lucide-react";
 import { useMemo, useState, type ClipboardEvent, type RefObject } from "react";
 
 import { ImageLightbox } from "@/components/image-lightbox";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 
@@ -27,6 +26,15 @@ type ImageComposerProps = {
   onReferenceImageChange: (files: File[]) => void | Promise<void>;
   onRemoveReferenceImage: (index: number) => void;
 };
+
+const imageSizeOptions = [
+  { value: "", label: "未指定" },
+  { value: "1:1", label: "1:1 (正方形)" },
+  { value: "16:9", label: "16:9 (横版)" },
+  { value: "4:3", label: "4:3 (横版)" },
+  { value: "3:4", label: "3:4 (竖版)" },
+  { value: "9:16", label: "9:16 (竖版)" },
+];
 
 export function ImageComposer({
   isUserMode = false,
@@ -52,15 +60,6 @@ export function ImageComposer({
     () => referenceImages.map((image, index) => ({ id: `${image.name}-${index}`, src: image.dataUrl })),
     [referenceImages],
   );
-  const imageSizeOptions = [
-    { value: "", label: "未指定" },
-    { value: "1:1", label: "1:1 (正方形)" },
-    { value: "16:9", label: "16:9 (横版)" },
-    { value: "4:3", label: "4:3 (横版)" },
-    { value: "3:4", label: "3:4 (竖版)" },
-    { value: "9:16", label: "9:16 (竖版)" },
-  ];
-
   const handleTextareaPaste = (event: ClipboardEvent<HTMLTextAreaElement>) => {
     const imageFiles = Array.from(event.clipboardData.files).filter((file) => file.type.startsWith("image/"));
     if (imageFiles.length === 0) {
@@ -241,18 +240,23 @@ export function ImageComposer({
                           className="h-6 w-[36px] border-0 bg-transparent px-0 text-center text-xs font-medium text-stone-700 shadow-none focus-visible:ring-0 sm:h-8 sm:w-[64px] sm:text-sm"
                         />
                       </div>
-                      <Select value={imageSize} onValueChange={onImageSizeChange}>
-                        <SelectTrigger className="h-8 w-auto gap-1.5 rounded-full border-stone-200 bg-white px-2.5 text-xs font-medium text-stone-700 shadow-none sm:h-auto sm:px-3 sm:py-1 sm:text-[13px] [&>svg]:size-3.5 sm:[&>svg]:size-4">
-                          <SelectValue placeholder="未指定" />
-                        </SelectTrigger>
-                        <SelectContent>
+                      <div className="relative">
+                        <select
+                          value={imageSize}
+                          onChange={(event) => onImageSizeChange(event.target.value)}
+                          className={cn(
+                            "h-8 appearance-none rounded-full border border-stone-200 bg-white pl-2.5 pr-7 text-xs font-medium text-stone-700 outline-none transition sm:h-auto sm:pl-3 sm:pr-8 sm:py-1 sm:text-[13px]",
+                            isUserMode && "border-slate-200",
+                          )}
+                        >
                           {imageSizeOptions.map((option) => (
-                            <SelectItem key={option.value} value={option.value}>
+                            <option key={option.value} value={option.value}>
                               {option.label}
-                            </SelectItem>
+                            </option>
                           ))}
-                        </SelectContent>
-                      </Select>
+                        </select>
+                        <ChevronDown className="pointer-events-none absolute right-1.5 top-1/2 size-3.5 -translate-y-1/2 shrink-0 opacity-50 sm:right-2 sm:size-4" />
+                      </div>
                     </div>
                   </div>
                 </div>

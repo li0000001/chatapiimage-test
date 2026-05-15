@@ -75,8 +75,8 @@ export function ImageComposer({
       <div
         className={cn(
           "shrink-0 sm:relative",
-          "fixed inset-x-0 bottom-0 z-30",
-          "pb-[calc(env(safe-area-inset-bottom)+0.5rem)]",
+          "fixed inset-x-0 bottom-0 z-50 box-border",
+          "pb-[calc(env(safe-area-inset-bottom)+20px)]",
           "bg-gradient-to-t from-white via-white/97 to-white/90 backdrop-blur-xl",
           "border-t border-stone-200/60",
           "sm:static sm:border-t-0 sm:bg-transparent sm:pb-0 sm:backdrop-blur-none sm:from-transparent",

@@ -263,18 +263,18 @@ function ImageManagerContent() {
           <div className="text-xs font-semibold tracking-[0.18em] text-stone-500 uppercase">Images</div>
           <h1 className="text-2xl font-semibold tracking-tight">图片管理</h1>
         </div>
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap gap-1.5 sm:gap-2">
           <DateRangeFilter startDate={startDate} endDate={endDate} onChange={(start, end) => { setStartDate(start); setEndDate(end); }} />
-          <Button variant="outline" onClick={clearFilters} className="h-10 rounded-xl border-stone-200 bg-white px-4 text-stone-700">
-            清除筛选条件
+          <Button variant="outline" onClick={clearFilters} className="h-9 sm:h-10 rounded-xl border-stone-200 bg-white px-3 sm:px-4 text-xs sm:text-sm text-stone-700">
+            清除
           </Button>
-          <Button onClick={() => void loadImages()} disabled={isLoading} className="h-10 rounded-xl bg-stone-950 px-4 text-white hover:bg-stone-800">
-            {isLoading ? <LoaderCircle className="size-4 animate-spin" /> : <Search className="size-4" />}
+          <Button onClick={() => void loadImages()} disabled={isLoading} className="h-9 sm:h-10 rounded-xl bg-stone-950 px-3 sm:px-4 text-xs sm:text-sm text-white hover:bg-stone-800">
+            {isLoading ? <LoaderCircle className="size-3.5 sm:size-4 animate-spin" /> : <Search className="size-3.5 sm:size-4" />}
             查询
           </Button>
-          <Button variant="outline" onClick={() => setDeleteMode("filtered")} disabled={isDeleting || items.length === 0 || (!startDate && !endDate)} className="h-10 rounded-xl border-rose-200 bg-white px-4 text-rose-600 hover:bg-rose-50">
-            <Trash2 className="size-4" />
-            删除匹配日期
+          <Button variant="outline" onClick={() => setDeleteMode("filtered")} disabled={isDeleting || items.length === 0 || (!startDate && !endDate)} className="h-9 sm:h-10 rounded-xl border-rose-200 bg-white px-3 sm:px-4 text-xs sm:text-sm text-rose-600 hover:bg-rose-50">
+            <Trash2 className="size-3.5 sm:size-4" />
+            删除匹配
           </Button>
         </div>
       </div>
@@ -329,36 +329,34 @@ function ImageManagerContent() {
 
       <Card className="rounded-2xl border-white/80 bg-white/90 shadow-sm">
         <CardContent className="p-0">
-          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-stone-100 px-5 py-4">
-            <div className="flex flex-wrap items-center gap-3 text-sm text-stone-600">
-              <ImageIcon className="size-4" />
+          <div className="flex flex-wrap items-center justify-between gap-2 sm:gap-3 border-b border-stone-100 px-3 py-3 sm:px-5 sm:py-4">
+            <div className="flex flex-wrap items-center gap-2 sm:gap-3 text-xs sm:text-sm text-stone-600">
+              <ImageIcon className="size-3.5 sm:size-4" />
               共 {filteredItems.length} 张
-              {selectedTags.length > 0 ? <span className="text-stone-400">（筛选自 {items.length} 张）</span> : null}
-              <label className="flex items-center gap-2">
+              {selectedTags.length > 0 ? <span className="text-stone-400 hidden sm:inline">（筛选自 {items.length} 张）</span> : null}
+              <label className="flex items-center gap-1.5 sm:gap-2">
                 <Checkbox checked={currentPageSelected} onCheckedChange={(checked) => togglePaths(currentRows.map(imageKey), Boolean(checked))} />
-                本页全选
+                <span className="hidden sm:inline">本页全选</span>
               </label>
-              <label className="flex items-center gap-2">
+              <label className="hidden sm:flex items-center gap-2">
                 <Checkbox checked={allSelected} onCheckedChange={(checked) => togglePaths(filteredItems.map(imageKey), Boolean(checked))} />
                 全选结果
               </label>
-              {selectedPaths.length > 0 ? <span>已选 {selectedPaths.length} 张</span> : null}
+              {selectedPaths.length > 0 ? <span>已选 {selectedPaths.length}</span> : null}
             </div>
-            <div className="flex items-center gap-2">
-              <Button variant="ghost" className="h-8 rounded-lg px-3 text-stone-500" onClick={() => void loadImages()} disabled={isLoading}>
-                <RefreshCw className={`size-4 ${isLoading ? "animate-spin" : ""}`} />
-                刷新
+            <div className="flex items-center gap-1.5 sm:gap-2">
+              <Button variant="ghost" size="sm" className="h-7 sm:h-8 rounded-lg px-2 sm:px-3 text-xs sm:text-sm text-stone-500" onClick={() => void loadImages()} disabled={isLoading}>
+                <RefreshCw className={`size-3.5 sm:size-4 ${isLoading ? "animate-spin" : ""}`} />
+                <span className="hidden sm:inline">刷新</span>
               </Button>
-              <button type="button" className="text-sm text-stone-500 hover:text-stone-900 disabled:text-stone-300" onClick={() => setSelectedPaths([])} disabled={selectedPaths.length === 0 || isDeleting}>
-                取消选择
+              <button type="button" className="text-xs sm:text-sm text-stone-500 hover:text-stone-900 disabled:text-stone-300" onClick={() => setSelectedPaths([])} disabled={selectedPaths.length === 0 || isDeleting}>
+                取消
               </button>
-              <Button variant="outline" className="h-8 rounded-lg border-stone-200 bg-white px-3 text-stone-600 hover:bg-stone-50" onClick={() => void handleBatchDownload()} disabled={selectedPaths.length === 0 || isDownloading || isDeleting}>
-                {isDownloading ? <LoaderCircle className="size-4 animate-spin" /> : <Download className="size-4" />}
-                下载所选
+              <Button variant="outline" size="sm" className="h-7 sm:h-8 rounded-lg border-stone-200 bg-white px-2 sm:px-3 text-xs sm:text-sm text-stone-600 hover:bg-stone-50" onClick={() => void handleBatchDownload()} disabled={selectedPaths.length === 0 || isDownloading || isDeleting}>
+                {isDownloading ? <LoaderCircle className="size-3.5 sm:size-4 animate-spin" /> : <Download className="size-3.5 sm:size-4" />}
               </Button>
-              <Button variant="outline" className="h-8 rounded-lg border-rose-200 bg-white px-3 text-rose-600 hover:bg-rose-50" onClick={() => setDeleteMode("selected")} disabled={selectedPaths.length === 0 || isDeleting}>
-                <Trash2 className="size-4" />
-                删除所选
+              <Button variant="outline" size="sm" className="h-7 sm:h-8 rounded-lg border-rose-200 bg-white px-2 sm:px-3 text-xs sm:text-sm text-rose-600 hover:bg-rose-50" onClick={() => setDeleteMode("selected")} disabled={selectedPaths.length === 0 || isDeleting}>
+                <Trash2 className="size-3.5 sm:size-4" />
               </Button>
             </div>
           </div>
@@ -366,11 +364,11 @@ function ImageManagerContent() {
             {currentRows.map((item) => {
               const imageIndex = filteredItems.findIndex((row) => row.url === item.url);
               return (
-              <div key={item.rel} className="group border-r border-b border-stone-100 p-4 transition hover:bg-stone-50">
+              <div key={item.rel} className="group border-r border-b border-stone-100/80 p-4 transition-all duration-300 hover:bg-stone-50/80 hover:shadow-[0_4px_20px_-12px_rgba(15,23,42,0.08)]">
                 <div className="relative">
                   <button
                     type="button"
-                    className="relative block aspect-square w-full cursor-zoom-in overflow-hidden rounded-lg bg-stone-100 text-left"
+                    className="relative block aspect-square w-full cursor-zoom-in overflow-hidden rounded-xl bg-stone-100 text-left shadow-[0_2px_8px_-4px_rgba(15,23,42,0.08)] transition-shadow duration-300 group-hover:shadow-[0_8px_24px_-12px_rgba(15,23,42,0.18)]"
                     onClick={() => {
                       setLightboxIndex(imageIndex);
                       setLightboxOpen(true);
@@ -379,7 +377,7 @@ function ImageManagerContent() {
                     <img
                       src={normalizeBrowserImageUrl(item.thumbnail_url || item.url)}
                       alt={item.name}
-                      className="h-full w-full object-cover transition group-hover:scale-[1.02]"
+                      className="h-full w-full object-cover transition duration-500 group-hover:scale-[1.04]"
                       onError={(event) => {
                         const fallbackSrc = normalizeBrowserImageUrl(item.url);
                         if (event.currentTarget.src !== fallbackSrc) {

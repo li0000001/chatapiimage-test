@@ -1138,9 +1138,9 @@ function ImagePageContent({ isUserMode }: { isUserMode: boolean }) {
     <>
       <section
         className={cn(
-          "mx-auto grid h-[calc(100dvh-4.75rem)] min-h-0 w-full max-w-[1380px] grid-cols-1 gap-2 overflow-hidden px-0 pb-0 sm:h-[calc(100dvh-5.25rem)] sm:gap-3 sm:px-3 sm:pb-0 lg:grid-cols-[240px_minmax(0,1fr)]",
+          "mx-auto grid h-[calc(100dvh-3.75rem)] min-h-0 w-full max-w-[1380px] grid-cols-1 gap-2 overflow-hidden px-0 pb-0 sm:h-[calc(100dvh-5.25rem)] sm:gap-3 sm:px-3 sm:pb-6 lg:grid-cols-[240px_minmax(0,1fr)]",
           isUserMode &&
-            "rounded-[28px] border border-white/70 bg-white/54 p-2 shadow-[0_22px_90px_-60px_rgba(15,23,42,0.55)] backdrop-blur-xl sm:p-3 lg:grid-cols-[280px_minmax(0,1fr)]",
+            "h-[calc(100dvh-4rem)] rounded-[28px] border border-white/70 bg-white/54 p-2 shadow-[0_22px_90px_-60px_rgba(15,23,42,0.55)] backdrop-blur-xl sm:h-[calc(100dvh-7rem)] sm:p-3 lg:grid-cols-[280px_minmax(0,1fr)]",
         )}
       >
         <div
@@ -1195,8 +1195,8 @@ function ImagePageContent({ isUserMode }: { isUserMode: boolean }) {
           </DialogContent>
         </Dialog>
 
-        <div className="flex min-h-0 flex-col gap-2 overflow-hidden sm:gap-4">
-          <div className="flex shrink-0 items-center justify-between gap-2 px-1 lg:hidden">
+        <div className="flex min-h-0 flex-col gap-2 sm:gap-4">
+          <div className="sticky top-0 z-20 flex items-center justify-between gap-2 px-1 pt-1 pb-1 lg:hidden">
             <Button
               variant="outline"
               className={cn(
@@ -1230,7 +1230,7 @@ function ImagePageContent({ isUserMode }: { isUserMode: boolean }) {
 
           <div
             ref={resultsViewportRef}
-            className="hide-scrollbar min-h-0 flex-1 overscroll-contain overflow-y-auto px-1 py-2 sm:px-4 sm:py-4"
+            className="hide-scrollbar min-h-0 flex-1 overscroll-contain overflow-y-auto px-1 py-2 pb-[148px] sm:px-4 sm:py-4 sm:pb-4"
           >
             <ImageResults
               isUserMode={isUserMode}

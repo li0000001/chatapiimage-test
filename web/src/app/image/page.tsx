@@ -1312,3 +1312,4 @@ export default function ImagePage() {
 
   return <ImagePageContent isUserMode={session.role === "user"} />;
 }
+ 

@@ -98,7 +98,7 @@ export default function LoginPage() {
       <div className="absolute bottom-[8%] right-[10%] -z-10 h-72 w-72 rounded-full bg-amber-200/30 blur-[100px]" />
 
       {/* 主卡片容器 */}
-      <div className="grid w-full max-w-[1100px] overflow-hidden rounded-[32px] border border-white/80 bg-white/70 shadow-[0_32px_64px_-16px_rgba(0,0,0,0.1)] backdrop-blur-2xl lg:grid-cols-[1.1fr_0.9fr]">
+      <div className="grid w-full max-w-[1100px] overflow-hidden rounded-[32px] border border-white/60 bg-white/65 shadow-[0_32px_64px_-16px_rgba(0,0,0,0.08),0_0_0_1px_rgba(255,255,255,0.5)] backdrop-blur-2xl lg:grid-cols-[1.1fr_0.9fr] transition-shadow duration-500 hover:shadow-[0_40px_80px_-20px_rgba(0,0,0,0.12),0_0_0_1px_rgba(255,255,255,0.6)]">
         
         {/* 左侧展示区 */}
         <section className="relative hidden flex-col overflow-hidden bg-[#0f172a] text-white lg:flex">
@@ -133,7 +133,7 @@ export default function LoginPage() {
               {featureItems.map((item) => {
                 const Icon = item.icon;
                 return (
-                  <div key={item.label} className="group flex items-center gap-4 rounded-2xl border border-white/5 bg-white/5 p-4 transition-all hover:bg-white/10">
+                  <div key={item.label} className="group flex items-center gap-4 rounded-2xl border border-white/5 bg-white/5 p-4 transition-all duration-300 hover:bg-white/[0.12] hover:border-white/[0.12] hover:scale-[1.02]">
                     <div className="flex size-10 items-center justify-center rounded-xl bg-white text-slate-950 shadow-lg">
                       <Icon className="size-5" />
                     </div>
@@ -176,7 +176,7 @@ export default function LoginPage() {
               </div>
 
               <Button
-                className="h-14 w-full rounded-2xl bg-slate-950 text-base font-semibold text-white transition-all hover:bg-slate-800 active:scale-[0.98]"
+                className="h-14 w-full rounded-2xl bg-slate-950 text-base font-semibold text-white transition-all duration-200 hover:bg-slate-800 hover:shadow-[0_8px_24px_-8px_rgba(15,23,42,0.35)] active:scale-[0.98]"
                 onClick={handleLogin}
                 disabled={!hasAcknowledgedStatement || isSubmitting}
               >
@@ -196,19 +196,19 @@ export default function LoginPage() {
 
       {/* 弹窗部分 */}
       <Dialog open={!hasAcknowledgedStatement} onOpenChange={() => {}}>
-        <DialogContent showCloseButton={false} className="max-h-[85vh] w-[92vw] max-w-[640px] overflow-hidden rounded-[28px] p-0">
-          <DialogHeader className="border-b border-slate-100 bg-slate-50/50 px-8 py-6">
-            <DialogTitle className="flex items-center gap-2 text-xl font-bold text-slate-900">
-              <ShieldCheck className="size-6 text-teal-600" />
+        <DialogContent showCloseButton={false} className="flex max-h-[88dvh] w-[92vw] max-w-[640px] flex-col overflow-hidden rounded-[28px] p-0">
+          <DialogHeader className="shrink-0 border-b border-slate-100 bg-slate-50/50 px-5 py-5 sm:px-8 sm:py-6">
+            <DialogTitle className="flex items-center gap-2 text-lg font-bold text-slate-900 sm:text-xl">
+              <ShieldCheck className="size-5 text-teal-600 sm:size-6" />
               风险与合规声明
             </DialogTitle>
           </DialogHeader>
-          <div className="max-h-[50vh] overflow-y-auto px-8 py-6">
-            <div className="whitespace-pre-wrap text-[14px] leading-8 text-slate-600">
+          <div className="flex-1 overflow-y-auto px-5 py-4 sm:px-8 sm:py-6">
+            <div className="whitespace-pre-wrap text-[13px] leading-7 text-slate-600 sm:text-[14px] sm:leading-8">
               {COMPLIANCE_STATEMENT}
             </div>
           </div>
-          <DialogFooter className="border-t border-slate-100 bg-white p-6">
+          <DialogFooter className="shrink-0 border-t border-slate-100 bg-white p-4 sm:p-6">
             <Button
               className="h-12 w-full rounded-xl bg-slate-950 text-white hover:bg-slate-800 sm:w-auto sm:px-10"
               onClick={() => setHasAcknowledgedStatement(true)}

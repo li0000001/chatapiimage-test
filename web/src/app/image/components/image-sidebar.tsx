@@ -65,8 +65,8 @@ export function ImageSidebar({
     setEditingTitle("");
   }, []);
   return (
-    <aside className="h-full min-h-0 overflow-hidden">
-      <div className="flex h-full min-h-0 flex-col gap-2 py-1 sm:gap-3 sm:py-2">
+    <aside className="h-full min-h-0 overflow-hidden rounded-2xl border border-white/50 bg-white/45 backdrop-blur-sm">
+      <div className="flex h-full min-h-0 flex-col gap-2 px-1 py-2 sm:gap-3 sm:py-3">
         {!hideActionButtons && (
           <div className="flex items-center gap-2">
             <Button
@@ -114,14 +114,14 @@ export function ImageSidebar({
                 <div
                   key={conversation.id}
                   className={cn(
-                    "group relative w-full border-l-2 text-left transition",
+                    "group relative w-full border-l-2 text-left transition-all duration-200 rounded-r-xl",
                     hideActionButtons ? "px-4 py-3.5" : "px-3 py-2 sm:py-3",
                     isUserMode && "rounded-2xl border-l-0",
                     active
                       ? cn("border-stone-900 bg-black/[0.035] text-stone-950", isUserMode && "bg-white text-slate-950 shadow-sm")
                       : cn(
-                          "border-transparent text-stone-700 hover:border-stone-300 hover:bg-white/40",
-                          isUserMode && "text-slate-600 hover:bg-white/70",
+                          "border-transparent text-stone-700 hover:border-stone-300 hover:bg-white/50",
+                          isUserMode && "text-slate-600 hover:bg-white/80",
                         ),
                   )}
                 >

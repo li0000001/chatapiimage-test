@@ -188,10 +188,10 @@ function LogsContent() {
               </Button>
             </div>
           </div>
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto hidden sm:block">
             <Table className="min-w-[900px]">
-              <TableHeader>
-                <TableRow>
+              <TableHeader className="sticky top-0 z-10 bg-stone-50/80 backdrop-blur-sm">
+                <TableRow className="border-stone-200/60 hover:bg-transparent">
                   <TableHead className="w-12"></TableHead>
                   <TableHead>时间</TableHead>
                   <TableHead>类型</TableHead>
@@ -204,10 +204,10 @@ function LogsContent() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {currentRows.map((item) => {
+                {currentRows.map((item, index) => {
                   const urls = getUrls(item);
                   return (
-                    <TableRow key={item.id} className="text-stone-600">
+                    <TableRow key={item.id} className={cn("text-stone-600 transition-colors hover:bg-stone-100/60", index % 2 === 1 ? "bg-stone-50/30" : "bg-white")}>
                       <TableCell>
                         <Checkbox checked={selectedSet.has(item.id)} onCheckedChange={(checked) => toggleIds([item.id], Boolean(checked))} />
                       </TableCell>
@@ -263,6 +263,44 @@ function LogsContent() {
                 })}
               </TableBody>
             </Table>
+          </div>
+
+          <div className="block sm:hidden divide-y divide-stone-100">
+            {currentRows.map((item) => {
+              const urls = getUrls(item);
+              return (
+                <div key={item.id} className="px-4 py-3 space-y-2">
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <Checkbox checked={selectedSet.has(item.id)} onCheckedChange={(checked) => toggleIds([item.id], Boolean(checked))} />
+                      <Badge variant={item.detail?.status === "failed" ? "danger" : "success"} className="rounded-md shrink-0">
+                        {getStatus(item)}
+                      </Badge>
+                    </div>
+                    <span className="text-xs text-stone-400 shrink-0">{item.time}</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-xs text-stone-500">
+                    <Badge variant="secondary" className="rounded-md">{typeLabels[item.type] || item.type}</Badge>
+                    {isCallLog ? <span>{getDetailText(item, "key_name")}</span> : null}
+                    {isCallLog ? <span>{formatDuration(item)}</span> : null}
+                  </div>
+                  <div className="flex items-center gap-2 text-xs text-stone-500">
+                    <span className="truncate flex-1">{item.summary || "-"}</span>
+                    {isCallLog && urls.length > 0 ? (
+                      <span className="text-stone-400 shrink-0">{urls.length} 张图</span>
+                    ) : null}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Button variant="ghost" size="sm" className="h-7 rounded-lg px-2 text-xs text-stone-600" onClick={() => openDetail(item)}>
+                      详情
+                    </Button>
+                    <Button variant="ghost" size="sm" className="h-7 rounded-lg px-2 text-xs text-rose-600 hover:bg-rose-50" onClick={() => setDeletingItems([item])}>
+                      删除
+                    </Button>
+                  </div>
+                </div>
+              );
+            })}
           </div>
           <div className="flex items-center justify-end gap-2 border-t border-stone-100 px-4 py-3 text-sm text-stone-500">
             <span>第 {safePage} / {pageCount} 页，共 {items.length} 条</span>
